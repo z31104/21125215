@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   flask-app:
     build:
@@ -9,6 +7,34 @@ services:
     container_name: flask-demo
 
     ports:
-      - "8080:5000"
+      - "80:5000"
+
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: flaskuser
+      DB_PASSWORD: flask123
+      DB_NAME: flaskdb
+
+    depends_on:
+      - mysql
 
     restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    container_name: mysql-cki101
+
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: flaskdb
+      MYSQL_USER: flaskuser
+      MYSQL_PASSWORD: flask123
+
+    ports:
+      - "8625:3306"
+
+    volumes:
+      - ./db_data:/var/lib/mysql
