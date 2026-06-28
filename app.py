@@ -1,6 +1,8 @@
 from flask import Flask, request, redirect
 import os
 import mysql.connector
+from google.cloud import storage
+from google.auth.exceptions import DefaultCredentialsError
 
 app = Flask(__name__)
 
@@ -123,6 +125,49 @@ def delete_user(user_id):
     conn.close()
 
     return redirect("/")
+
+@app.route("/gcp", methods=["GET", "POST"])
+def gcp_storage():
+    buckets = []
+    error = None
+    project_id = ""
+
+    if request.method == "POST":
+        project_id = request.form.get("project_id", "").strip()
+
+        try:
+            client = storage.Client()
+            bucket_list = client.list_buckets(project=project_id)
+            buckets = [bucket.name for bucket in bucket_list]
+
+        except DefaultCredentialsError:
+            error = "找不到 GCP 開發憑證，請先設定 Application Default Credentials。"
+
+        except Exception as e:
+            error = str(e)
+
+    html = """
+    <h1>GCP Cloud Storage Bucket 瀏覽</h1>
+
+    <form method="POST" action="/gcp">
+        Project ID：
+        <input type="text" name="project_id" value="{project_id}" required>
+        <button type="submit">查詢 Bucket</button>
+    </form>
+
+    <hr>
+    """.format(project_id=project_id)
+
+    if error:
+        html += f"<p style='color:red;'>錯誤：{error}</p>"
+
+    if buckets:
+        html += "<h2>Bucket 清單</h2><ul>"
+        for bucket in buckets:
+            html += f"<li>{bucket}</li>"
+        html += "</ul>"
+
+    return html
 
 
 if __name__ == "__main__":
